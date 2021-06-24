@@ -1,0 +1,44 @@
+#! /usr/bin/env node
+const {program} = require('commander');
+const {buildSync, transformSync} = require('esbuild');
+const {readFileSync} = require('fs');
+const {resolve} = require('path')
+const execa = require('execa')
+const chalk = require('chalk')
+
+program
+	.version('0.0.1', '-v, --version')
+	.usage('[options]')
+	.option('-h, --help')
+	.option('-c, --config <filepath>', 'config file path')
+	.action((args) => {
+		const {config, help} = args;
+		let stdout = '';
+		if (help) {
+			const { stdout: commandResult } = execa.commandSync('./node_modules/.bin/esbuild --help')
+			commandResult.split('\n').forEach(item => {
+				if (item.trim()[0] === '#') {
+					stdout += chalk.white(item) + '\n'
+				} else if (/[A-Z][\s\S]*:$/.test(item)) {
+					stdout += chalk.rgb(255, 255, 255)(item) + '\n'
+				} else {
+					stdout += chalk(item) + '\n'
+				}
+			})
+			console.log(stdout);
+			stdout = ''
+			return
+		}
+		let configuration = require(resolve(process.cwd(), config))
+		configuration = {
+			...configuration,
+
+		}
+		let result = buildSync({
+			...configuration,
+			minify: true,
+			bundle: true
+		});
+	})
+program
+	.parse()
